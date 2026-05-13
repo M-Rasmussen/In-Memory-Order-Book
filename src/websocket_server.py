@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 from dataclasses import asdict
 
 import websockets
@@ -17,7 +18,6 @@ async def broadcast(message: dict) -> None:
         return
 
     payload = json.dumps(message)
-
     disconnected = []
 
     for client in clients:
@@ -27,7 +27,7 @@ async def broadcast(message: dict) -> None:
             disconnected.append(client)
 
     for client in disconnected:
-        clients.remove(client)
+        clients.discard(client)
 
 
 async def handle_client(websocket):
@@ -65,12 +65,15 @@ async def handle_client(websocket):
         )
 
     finally:
-        clients.remove(websocket)
+        clients.discard(websocket)
 
 
 async def main():
-    async with websockets.serve(handle_client, "localhost", 8765):
-        print("WebSocket server running on ws://localhost:8765")
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8765"))
+
+    async with websockets.serve(handle_client, host, port):
+        print(f"WebSocket server running on ws://{host}:{port}")
         await asyncio.Future()
 
 
